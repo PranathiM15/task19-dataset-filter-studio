@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FilterLab — Dataset Records</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <a class="brand" href="/"><span class="brand-mark">F.</span><span>filter<span class="brand-light">lab</span><small>DATA WORKSPACE</small></span></a>
+    <div class="side-label">WORKSPACE</div>
+    <a class="nav active" href="/"><span>▦</span> Dataset studio <b>01</b></a>
+    <div class="side-label space">QUICK START</div>
+    <button class="side-action" onclick="loadExample('students')"><span class="dot purple"></span> Student performance</button>
+    <button class="side-action" onclick="loadExample('titanic')"><span class="dot orange"></span> Titanic sample</button>
+    <div class="sidebar-bottom"><div class="online"></div><div><strong>Local workspace</strong><small>Your data stays on this machine</small></div></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><span class="crumb">PROJECTS</span><span class="slash">/</span><strong>Filter Dataset Records</strong></div><span class="task-pill">TASK 19 <i>•</i> LEVEL 1</span></header>
+    <section class="intro"><div><div class="eyebrow"><span class="spark">✳</span> PANDAS · RECORD EXPLORER</div><h1>Find the signal.<br><em>Filter the noise.</em></h1><p>Build conditions, combine rules, and surface the records that matter.</p></div><div class="hero-stamp"><span>FL</span><small>DATA<br>TOOLS / 019</small></div></section>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}<div class="flash-wrap">{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}{% endwith %}
+    <section class="stats">
+      <div class="stat"><span class="stat-label">SOURCE RECORDS</span><strong>{{ rows }}</strong><small>Rows in active dataset</small></div>
+      <div class="stat accent"><span class="stat-label">MATCHED RECORDS</span><strong>{{ filtered_rows }}</strong><small>{% if rows %}{{ (filtered_rows * 100 / rows)|round(1) }}% of source retained{% else %}No rows{% endif %}</small></div>
+      <div class="stat"><span class="stat-label">ACTIVE CONDITIONS</span><strong>{{ rules|length }}</strong><small>Rules in this filter</small></div>
+      <div class="stat"><span class="stat-label">COLUMNS</span><strong>{{ columns|length }}</strong><small>Available fields</small></div>
+    </section>
+    <section class="panel source-panel">
+      <div class="panel-head"><div><span class="section-index">01 / SOURCE</span><h2>Choose your dataset</h2></div><span class="tiny-tag">CSV · PANDAS</span></div>
+      <div class="source-grid">
+        <form method="post" class="source-card"><input type="hidden" name="action" value="dataset"><span class="source-icon violet">▤</span><div><strong>Student performance</strong><small>Scores, attendance & study time</small></div><button name="dataset_kind" value="students" class="mini-btn">Use sample ↗</button></form>
+        <form method="post" class="source-card"><input type="hidden" name="action" value="dataset"><span class="source-icon amber">◈</span><div><strong>Titanic passengers</strong><small>Age, fare, class & survival</small></div><button name="dataset_kind" value="titanic" class="mini-btn">Use sample ↗</button></form>
+      </div>
+      <form method="post" enctype="multipart/form-data" class="upload-row"><input type="hidden" name="action" value="upload"><div><strong>Bring your own CSV</strong><small>Comma-separated file · up to 10 MB</small></div><input type="file" name="dataset_file" accept=".csv" required><button class="btn dark" type="submit">Upload CSV <span>↑</span></button></form>
+      <div class="active-source"><span class="pulse"></span> ACTIVE SOURCE <strong>{{ dataset_label }}</strong><span class="source-count">{{ rows }} records loaded</span></div>
+    </section>
+    <section class="panel filter-panel">
+      <div class="panel-head"><div><span class="section-index">02 / LOGIC BUILDER</span><h2>Set your conditions</h2><p class="panel-sub">Each row is one Boolean condition. Leave unused rows blank.</p></div><span class="logic-badge">PANDAS BOOLEAN MASKS</span></div>
+      <form method="post" id="filter-form"><input type="hidden" name="action" value="filter">
+        <div class="logic-top"><span>FILTER RULES <b>UP TO 5</b></span><div class="joiner">Combine using <select name="joiner"><option value="AND" {% if joiner=='AND' %}selected{% endif %}>AND · all must match</option><option value="OR" {% if joiner=='OR' %}selected{% endif %}>OR · any can match</option></select></div></div>
+        <div class="rules">
+          {% for i in range(5) %}{% set rule = rules[i] if i < rules|length else {} %}
+          <div class="rule-row"><span class="rule-number">{{ '%02d' % (i+1) }}</span><select name="column_{{ i }}" class="field column-select"><option value="">Choose column…</option>{% for col in columns %}<option value="{{ col }}" {% if rule.get('column')==col %}selected{% endif %}>{{ col }}</option>{% endfor %}</select>
+          <select name="operator_{{ i }}" class="field operator-select"><option value="greater" {% if rule.get('operator')=='greater' %}selected{% endif %}>Greater than &gt;</option><option value="greater_equal" {% if rule.get('operator')=='greater_equal' %}selected{% endif %}>At least ≥</option><option value="less" {% if rule.get('operator')=='less' %}selected{% endif %}>Less than &lt;</option><option value="less_equal" {% if rule.get('operator')=='less_equal' %}selected{% endif %}>At most ≤</option><option value="equals" {% if rule.get('operator')=='equals' %}selected{% endif %}>Equals =</option><option value="not_equals" {% if rule.get('operator')=='not_equals' %}selected{% endif %}>Does not equal ≠</option><option value="contains" {% if rule.get('operator')=='contains' %}selected{% endif %}>Contains text</option><option value="not_contains" {% if rule.get('operator')=='not_contains' %}selected{% endif %}>Does not contain</option><option value="is_empty" {% if rule.get('operator')=='is_empty' %}selected{% endif %}>Is empty</option><option value="is_not_empty" {% if rule.get('operator')=='is_not_empty' %}selected{% endif %}>Is not empty</option></select>
+          <input class="field value-field" name="value_{{ i }}" value="{{ rule.get('value','') }}" placeholder="Enter value…" {% if rule.get('operator') in ['is_empty','is_not_empty'] %}disabled{% endif %}><span class="rule-state">{% if rule %}●{% else %}○{% endif %}</span></div>{% endfor %}
+        </div>
+        <div class="filter-actions"><button class="btn primary" type="submit"><span>✳</span> Apply filters <b>→</b></button><button class="btn plain" type="button" onclick="fillExample()">Try example</button><button class="btn plain" type="submit" formaction="/" formmethod="post" name="action" value="reset">Clear all</button><span class="hint">Tip: use parentheses in Python when combining multiple Pandas conditions.</span></div>
+      </form>
+      <div class="examples"><span>TRY THESE:</span><button onclick="setPreset('score')">Score ≥ 75</button><button onclick="setPreset('attendance')">Attendance ≥ 85</button><button onclick="setPreset('name')">Name contains “a”</button></div>
+    </section>
+    <section class="panel results-panel">
+      <div class="panel-head results-head"><div><span class="section-index">03 / OUTPUT</span><h2>Filtered records <span class="result-count">{{ filtered_rows }}</span></h2><p class="panel-sub">Showing up to {{ preview_limit }} rows. Download the full result as CSV.</p></div><a class="btn download" href="{{ url_for('download') }}">↓ Export CSV</a></div>
+      {% if filtered_rows == 0 %}<div class="empty"><span>⌕</span><strong>No matching records</strong><p>Try changing a value or switching AND to OR.</p></div>{% else %}
+      <div class="table-wrap"><table><thead><tr><th class="row-id">#</th>{% for col in table_columns %}<th>{{ col }}</th>{% endfor %}</tr></thead><tbody>{% for row in records %}<tr><td class="row-id">{{ loop.index }}</td>{% for col in table_columns %}<td>{% if row[col] is sameas true %}<span class="boolean yes">TRUE</span>{% elif row[col] is sameas false %}<span class="boolean no">FALSE</span>{% else %}{{ row[col] }}{% endif %}</td>{% endfor %}</tr>{% endfor %}</tbody></table></div>{% if truncated %}<p class="table-note">Preview limited to 100 rows. Export CSV for the complete result.</p>{% endif %}{% endif %}
+      <div class="table-footer"><span><b>{{ filtered_rows }}</b> records matched</span><span>Powered by <strong>Python + Pandas</strong></span></div>
+    </section>
+    <footer><span>FILTERLAB <b>•</b> TASK 19</span><span>Built for clarity, powered by data.</span></footer>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body></html>
